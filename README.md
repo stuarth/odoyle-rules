@@ -50,7 +50,7 @@ Let's start by just making a rule that prints out a timestamp whenever it update
       (println tt)]}))
 
 ;; create session and add rule
-(def *session
+(def *session*
   (atom (reduce o/add-rule (o/->session) rules)))
 ```
 
@@ -59,7 +59,7 @@ The most important part of a rule is the `:what` block, which specifies what tup
 You can then insert the time value:
 
 ```clj
-(swap! *session
+(swap! *session*
   (fn [session]
     (-> session
         (o/insert ::time ::total 100)
@@ -109,14 +109,14 @@ Updating the player's `::x` attribute isn't useful unless we can get the value e
 As you can see, rules don't need a `:then` block if you're only using them to query from the outside. In this case, we'll query it externally and get back a vector of maps whose fields have the names you created as bindings:
 
 ```clj
-(swap! *session
+(swap! *session*
   (fn [session]
     (-> session
         (o/insert ::player ::x 20)
         (o/insert ::player ::y 15)
         o/fire-rules)))
 
-(println (o/query-all @*session ::get-player))
+(println (o/query-all @*session* ::get-player))
 ;; => [{:x 20, :y 15}]
 ```
 
@@ -135,7 +135,7 @@ You can also query from inside a rule with the special `*session*` dynamic var:
       :then
       (println "Query from inside rule:" (o/query-all o/*session* ::get-player))]}))
 
-(reset! *session
+(reset! *session*
   (-> (reduce o/add-rule (o/->session) rules)
       (o/insert ::player {::x 20 ::y 15}) ;; notice this short-hand way of inserting multiple things with the same id
       (o/insert ::time ::total 100)
@@ -162,13 +162,13 @@ Imagine you want to move the player's position based on its current position. So
           (o/insert ::player ::x (+ x dt))
           o/reset!)]}))
 
-(reset! *session
+(reset! *session*
   (-> (reduce o/add-rule (o/->session) rules)
       (o/insert ::player {::x 20 ::y 15})
       (o/insert ::time {::total 100 ::delta 0.1})
       o/fire-rules))
 
-(println (o/query-all @*session ::get-player))
+(println (o/query-all @*session* ::get-player))
 ;; => [{:x 20.1, :y 15}]
 ```
 
@@ -184,7 +184,7 @@ To do so, we need to start storing the window size in the session. Wherever your
 
 ```clj
 (defn on-window-resize [width height]
-  (swap! *session
+  (swap! *session*
          (fn [session]
            (-> session
                (o/insert ::window {::width width ::height height})
@@ -256,13 +256,13 @@ Now, we're making a binding on the id column, and since we're using the same bin
 Now we can add multiple things with those two attributes and get them back in a single query:
 
 ```clj
-(reset! *session
+(reset! *session*
   (-> (reduce o/add-rule (o/->session) rules)
       (o/insert ::player {::x 20 ::y 15})
       (o/insert ::enemy {::x 5 ::y 5})
       o/fire-rules))
 
-(println (o/query-all @*session ::get-character))
+(println (o/query-all @*session* ::get-character))
 ;; => [{:id :examples.odoyle/player, :x 20, :y 15} {:id :examples.odoyle/enemy, :x 5, :y 5}]
 ```
 
@@ -271,7 +271,7 @@ Now we can add multiple things with those two attributes and get them back in a 
 In addition to keywords like `::player`, it is likely that you'll want to generate ids at runtime. For example, if you just want to spawn random enemies, you probably don't want to create a special keyword for each one. For this reason, `insert` allows you to just pass arbitrary integers as ids:
 
 ```clj
-(swap! *session
+(swap! *session*
   (fn [session]
     (o/fire-rules
       (reduce (fn [session id]
@@ -279,7 +279,7 @@ In addition to keywords like `::player`, it is likely that you'll want to genera
               session
               (range 5)))))
 
-(println (o/query-all @*session ::get-character))
+(println (o/query-all @*session* ::get-character))
 ;; => [{:id 0, :x 14, :y 45} {:id 1, :x 12, :y 48} {:id 2, :x 48, :y 25} {:id 3, :x 4, :y 25} {:id 4, :x 39, :y 0}]
 ```
 
@@ -299,7 +299,7 @@ Notice that we've been using qualified keywords a lot. What else uses qualified 
 (s/def ::width (s/and number? pos?))
 (s/def ::height (s/and number? pos?))
 
-(swap! *session
+(swap! *session*
   (fn [session]
     (-> session
         (o/insert ::player {::x 20 ::y 15 ::width 0 ::height 15})
